@@ -1,4 +1,4 @@
-name: Release
+name: Release and Publish
 
 on:
   workflow_dispatch:
@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     
     steps:
       - name: Checkout code
@@ -71,3 +72,20 @@ jobs:
           echo "- **Tag**: v${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **GitHub Release**: Created ✅" >> $GITHUB_STEP_SUMMARY
           echo "- **Release URL**: https://github.com/${{ github.repository }}/releases/tag/v${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Set up node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install depdencies
+        run: npm ci
+
+      - name: Build Package
+        run: npm run build
+
+      - name: Publish to npm      
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
