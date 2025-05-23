@@ -36,6 +36,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREV_TAG"
+      
       - name: Generate changelog
         id: changelog
         run: |
@@ -50,17 +57,15 @@ jobs:
           fi
           
           # Set multiline output
-          {
-            echo 'CHANGELOG<<EOF'
-            cat changelog.md
-            echo EOF
-          } >> $GITHUB_OUTPUT
+          echo 'CHANGELOG<<EOF' >> $GITHUB_OUTPUT
+          cat changelog.md >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         run: |
           gh release create v${{ inputs.version }} \
             --title "Release v${{ inputs.version }}" \
-            --notes-file release_notes.md
+            --notes-file changelog.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
@@ -68,6 +73,6 @@ jobs:
         run: |
           echo "## 🎉 Release v${{ inputs.version }} Created Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: v${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: v${{ inputs.version }}" >> $GITHUB_OUTPUT
           echo "- **GitHub Release**: Created ✅" >> $GITHUB_STEP_SUMMARY
           echo "- **Release URL**: https://github.com/${{ github.repository }}/releases/tag/v${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
