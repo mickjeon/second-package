@@ -46,26 +46,21 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
+          changelog=""
           if [ -n "${{ steps.prev_tag.outputs.PREV_TAG }}" ]; then
-            echo "## Changes since ${{ steps.prev_tag.outputs.PREV_TAG }}" > changelog.md
-            echo "" >> changelog.md
-            git log --pretty=format:"- %s (%h)" ${{ steps.prev_tag.outputs.PREV_TAG }}..HEAD >> changelog.md
-          else
-            echo "## Initial Release" > changelog.md
-            echo "" >> changelog.md
-            git log --pretty=format:"- %s (%h)" >> changelog.md
+            changelog=$(git log --pretty=format:"- %s (%h)" ${{ steps.prev_tag.outputs.PREV_TAG }}..HEAD)
           fi
           
           # Set multiline output
-          echo 'CHANGELOG<<EOF' >> $GITHUB_OUTPUT
-          cat changelog.md >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$changelog" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         run: |
           gh release create v${{ inputs.version }} \
             --title "Release v${{ inputs.version }}" \
-            --notes-file changelog.md
+            --notes "${{ steps.changelog.outputs.changelog }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
